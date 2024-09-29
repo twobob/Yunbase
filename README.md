@@ -1,71 +1,179 @@
-## Yunbase
 
-在打数据挖掘的算法比赛中,有很多操作是每场比赛都要做的,从数据预处理到k折交叉验证,这些操作中有很多是重复的。每次都写重复的代码有点麻烦,所以我这里提取了这些操作中共性的部分,写了Yunbase这个类。(Yun取我的网名匀速小子的第一个字,base就是作为算法比赛的baseline)
+# Yunbase
 
-### 快速上手
+Yunbase is a comprehensive Python class designed to streamline repetitive tasks in data mining and machine learning competitions. It handles common operations such as data preprocessing, k-fold cross-validation, model training, and prediction, allowing you to focus on crafting winning solutions. The name "Yunbase" combines "Yun" from my online alias and "base" to signify its role as a baseline framework for algorithm competitions.
 
-1.克隆项目到本地
+## Quick Start
 
-> git clone https://github.com/yunsuxiaozi/Yunbase.git
+### 1. Clone the Project
 
-2.导入Yunbase
+Clone the Yunbase repository to your local machine:
 
->  from Yunbase.baseline import Yunbase
-
-3.创建Yunbase类
-
-> ```python
-> yunbase=Yunbase(num_folds=5,
->                       models=[],
->                       FE=None,
->                       seed=2024,
->                       objective='regression',
->                       metric='rmse',
->                       nan_margin=0.95,
->                       group_col='p_num',
->                       target_col='bg+1:00',
->                )
-> ```
-
-- num_folds:k折交叉验证的折数
-- models和FE是给用户灵活使用的。FE是一个特征工程的函数,你可以定义自己的特征工程,函数的使用方法形如:df=FE(df),models可以存储你自己的模型,例如:[(LGBMRegressor(**lgb_params),'lgb')]
-- seed:是随机种子
-- objective是任务类型,目前有'binary'(二分类),'multi_class'(多分类)和'regression'(回归)。
-- metric:评估指标,目前只支持rmse,mse和accuracy.
-- nan_margin:就是表格数据中某列缺失值大于多少,我们选择丢掉这列。
-- group_col是针对groupkfold而设计的,如果一个任务你认为需要用到groupkfold,group_col就是groupkfold的group那列。
-- target_col:我们需要预测的那列,也就是标签列。
-
-4.模型的训练
-
-目前支持csv文件的路径,或者已经读取出来的csv文件。
-
-> ```python
-> yunbase.fit(train_path_or_file="train.csv")
-> ```
-
-5.模型的推理
-
-```python
-test_preds=yunbase.predict(test_path_or_file="test.csv")
+```bash
+git clone https://github.com/yunsuxiaozi/Yunbase.git
 ```
 
-6.预测结果的保存
+### 2. Import Yunbase
 
-这里需要读取sample_submission,然后将target_col的值替换成test_preds
+Import the `Yunbase` class from the `baseline` module:
 
 ```python
-yunbase.submit(submission_path='sample_submission.csv',test_preds=test_preds)
+from Yunbase.baseline import Yunbase
 ```
 
-yunbase使用的参考教程
+### 3. Create a Yunbase Instance
 
-<a href="https://www.kaggle.com/code/yunsuxiaozi/brist1d-yunbase">yunbase</a>
+Initialize a `Yunbase` object with your desired configuration:
 
-### 后续工作
+```python
+yunbase = Yunbase(
+    num_folds=5,
+    models=[],           # Optional: List of custom models
+    FE=None,             # Optional: Custom feature engineering function
+    seed=2024,
+    objective='regression',
+    metric='rmse',
+    nan_margin=0.95,
+    group_col='p_num',   # Optional: Column name for group k-fold
+    target_col='bg+1:00',
+)
+```
 
-代码目前已经完成大致的框架,后续会继续改进,在修正bug的基础上增加新的功能。
+#### Parameters:
 
+- **num_folds**: *(int)* Number of folds for cross-validation.
+- **models**: *(list)* List of custom models to use. If empty, default models are used.
+- **FE**: *(function)* Custom feature engineering function. Should accept and return a DataFrame (`df = FE(df)`).
+- **seed**: *(int)* Random seed for reproducibility.
+- **objective**: *(str)* Type of task. Options are `'binary'`, `'multi_class'`, or `'regression'`.
+- **metric**: *(str)* Evaluation metric. Supported metrics include `'rmse'`, `'mse'`, `'accuracy'`, `'logloss'`, `'auc'`, and `'f1'`.
+- **nan_margin**: *(float)* Threshold for dropping columns with missing values.
+- **group_col**: *(str)* Column name for grouping in group k-fold cross-validation.
+- **target_col**: *(str)* Name of the target column to predict.
 
+### 4. Train the Models
 
- 2024/9/27
+Train the models using your training data. You can provide the path to a CSV file or a DataFrame:
+
+```python
+yunbase.fit(train_path_or_file="train.csv")
+```
+
+### 5. Make Predictions
+
+Generate predictions on the test set:
+
+```python
+test_preds = yunbase.predict(test_path_or_file="test.csv")
+```
+
+### 6. Save Prediction Results
+
+Create a submission file by replacing the `target_col` in your sample submission file with the predictions:
+
+```python
+yunbase.submit(submission_path='sample_submission.csv', test_preds=test_preds)
+```
+
+This will generate a file named `yunbase_submission.csv` with the updated predictions.
+
+## Detailed Usage
+
+### Custom Feature Engineering
+
+You can define your own feature engineering function and pass it to the `FE` parameter:
+
+```python
+def custom_fe(df):
+    # Example: Create interaction features
+    df['new_feature'] = df['feature1'] * df['feature2']
+    # Additional transformations
+    return df
+
+yunbase = Yunbase(
+    FE=custom_fe,
+    # Other parameters...
+)
+```
+
+### Custom Models
+
+You can supply your own models by passing a list of tuples containing the model instances and their names:
+
+```python
+from sklearn.linear_model import LinearRegression
+
+custom_models = [
+    (LinearRegression(), 'linear_regression'),
+    # Add other models
+]
+
+yunbase = Yunbase(
+    models=custom_models,
+    # Other parameters...
+)
+```
+
+### Supported Evaluation Metrics
+
+The following evaluation metrics are supported:
+
+- **Regression**: `'rmse'`, `'mse'`
+- **Classification**: `'accuracy'`, `'logloss'`, `'auc'`, `'f1'`
+
+### Supported Cross-Validation Methods
+
+Depending on the task and data, Yunbase automatically selects an appropriate cross-validation method:
+
+- **KFold**
+- **StratifiedKFold**
+- **GroupKFold**
+- **StratifiedGroupKFold**
+
+### Example Workflow
+
+```python
+# Import Yunbase
+from Yunbase.baseline import Yunbase
+
+# Initialize Yunbase
+yunbase = Yunbase(
+    num_folds=5,
+    seed=42,
+    objective='binary',
+    metric='auc',
+    target_col='target'
+)
+
+# Train models
+yunbase.fit('train.csv')
+
+# Make predictions
+test_preds = yunbase.predict('test.csv')
+
+# Submit predictions
+yunbase.submit('sample_submission.csv', test_preds)
+```
+
+## Future Work
+
+The current version of Yunbase provides a solid framework for handling common tasks in machine learning competitions. Future improvements will focus on:
+
+- **Bug Fixes**: Ongoing efforts to identify and resolve any issues.
+- **Feature Expansion**: Adding support for more models, metrics, and preprocessing techniques.
+- **Hyperparameter Optimization**: Integrating automated hyperparameter tuning.
+- **Ensemble Techniques**: Implementing stacking and blending methods for better performance.
+
+Stay tuned for updates!
+
+*2024/9/27*
+
+## Reference Tutorial
+
+For a practical demonstration of how to use Yunbase, check out the Kaggle notebook:
+
+[Yunbase Tutorial on Kaggle](https://www.kaggle.com/code/yunsuxiaozi/brist1d-yunbase)
+
+---
+
+Feel free to contribute to the project or raise issues on [GitHub](https://github.com/yunsuxiaozi/Yunbase).
